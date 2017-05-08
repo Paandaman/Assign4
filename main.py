@@ -8,12 +8,12 @@ from matplotlib.pyplot import quiver
 
 class Agents:
 
-    def __init__(self,pos, vel, goal, size):
+    def __init__(self,pos, vel, goal, size, colorr):
         self.pos = pos
         self.vel = vel
         self.goal = goal
         self.size = size # radius of circle
-        self.shape = plt.Circle((pos), radius=size, color='r') # CHANGED RAIDUS HERE FROM SIMPLY HAVING NUMERICAL STUFF
+        self.shape = plt.Circle((pos), radius=size, color=colorr) # CHANGED RAIDUS HERE FROM SIMPLY HAVING NUMERICAL STUFF
         self.velocity_objects = []
 
     def find_preffered_velocity(self):
@@ -46,10 +46,12 @@ class Agents:
             tp1, tp2 = self.find_tangents(self.pos, agent.pos, r)
             #global tp11, tp22, pos11
             # translate CC by agents vel
-            tp11 = np.add(tp1,agent.vel)
-            tp22 = np.add(tp2, agent.vel)
-            pos11 = np.add(self.pos, agent.vel)
-            tp11, tp22 = self.extrapolate_cone(pos11, tp11, tp22, self.pos)
+            print("agentvel", agent.vel)
+            agentvel = [agent.vel[0]*dv, agent.vel[1]*dv] #### CHANGE HERE FROM ONLY USING  agent.vel below, seems better
+            tp11 = np.add(tp1,agentvel)
+            tp22 = np.add(tp2, agentvel)
+            pos11 = np.add(self.pos, agentvel)
+            #tp11, tp22 = self.extrapolate_cone(pos11, tp11, tp22, self.pos)
             velocity_object = Polygon([pos11, tp22, tp11])
             velocity_objects.append(velocity_object)
         self.velocity_objects = velocity_objects # Use this later
@@ -62,9 +64,10 @@ class Agents:
         d = np.sqrt(np.sum(np.square(np.subtract(pos_i, pos_j))))
         if r > d: # To prevent imaginary values # WOuldn't want this to happen but I guess it's ok since r is extended
             print("\n how often",r) # This does not seem to work very well atm, In the paper they mention this special case
-            r = d
+            r = d   # Becomes NaN if we don't use this!
             print("\noch sen",r)
         alpha = np.arcsin(r/d)
+        print("u", alpha)
         gamma = 0.5*np.pi-alpha
         offseta = np.arctan2((pos_i[1]-pos_j[1]),(pos_i[0]-pos_j[0])) # arctan2 is a special version of arctan, takes (y, x) as input
         #print("alpha:", alpha, "gamma", gamma, "offseta", offseta)
@@ -152,6 +155,7 @@ class Agents:
             v_temp = [v_temp[0]*(max_velocity/new_velocity_magn), v_temp[1]*(max_velocity/new_velocity_magn)]
             #print("AAAAAAA", v_temp, self.vel)
             new_velocity = np.subtract(v_temp, self.vel)
+            new_velocity = [new_velocity[0]*dv, new_velocity[1]*dv]
         #print("FINAL NEW VELOCITY", new_velocity)
         return new_velocity
 
@@ -180,17 +184,18 @@ def main():
     n = 2 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
     size_field = 10
-    max_velocity = 2
-    max_acceleration = 1
+    max_velocity = 2##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
+    max_acceleration = 1##0.5
     dv = 0.1#0.1 # Step size when looking for new velocities I think
     t = 1 # timestep I guess
-    simulation_time = 60
-    radius = 0.3
+    simulation_time = 100
+    radius = 0.4
 
-    agentA = Agents([1,1], [0.5, 0.5], [8,8], radius) # position, velocity, goal, radius
-    agentB = Agents([8,8], [1, -0.5], [1,1], radius)
-    agentC = Agents([1,8], [1, 2], [8,1], radius)
-    agentD = Agents([8,1], [-1, 2], [1,8], radius)
+
+    agentA = Agents([1,1], [0.5, 0.5], [8,8], radius,'r') # position, velocity, goal, radius, color
+    agentB = Agents([8,8], [1, -0.5], [1,1], radius, 'b')
+    agentC = Agents([1,8], [1, 2], [8,1], radius, 'y')
+    agentD = Agents([8,1], [-1, 2], [1,8], radius, 'g')
     agents = [agentA, agentB, agentC, agentD]
 
     fig, ax = plt.subplots() # Fig ska man aldrig bry sig om om man inte vill ändra själva plotrutan
