@@ -5,8 +5,6 @@ from shapely.geometry.polygon import LinearRing, Polygon
 from shapely.geometry import MultiPolygon, Point
 from scipy import interpolate
 from matplotlib.pyplot import quiver
-import math
-import random
 
 class Agents:
 
@@ -26,12 +24,12 @@ class Agents:
         s = 0.5*max_acceleration*t*t
         d = np.sqrt(np.sum(np.square(np.subtract(self.goal, self.pos))))
         if d < s: # decrease velocity if we approach goal
-            #print("Does this ever Happen? ")
-            #print("\n d:", d)
-            #print("\n s:", s)
-            #print("\n ############################################################################N")
+            print("Does this ever Happen? ")
+            print("\n d:", d)
+            print("\n s:", s)
+            print("\n ############################################################################N")
             v_i_star = v_i_star*(d/s)
-            #print("\n v-Istar:", v_i_star)
+            print("\n v-Istar:", v_i_star)
         return v_i_star
 
 
@@ -41,43 +39,35 @@ class Agents:
             if agent == self:
                 #print("Skip this")
                 continue
-            #print("self size", self.size)
-            #print("self size", agent.size)
-            safety_padding = 0.2
-            r = self.size + agent.size+safety_padding # enlarge radius. safety padding is in order to avoid agents touching resulting in breakdown of arcsin..
-            #print("aded size", r)
-            tp1, tp2, retreat = self.find_tangents(self.pos, agent.pos, r)
+            print("self size", self.size)
+            print("self size", agent.size)
+            r = self.size + agent.size # enlarge radius
+            print("aded size", r)
+            tp1, tp2 = self.find_tangents(self.pos, agent.pos, r)
             #global tp11, tp22, pos11
             # translate CC by agents vel
-            #print("agentvel", agent.vel)
-            #agentvel = [agent.vel[0]*dv, agent.vel[1]*dv] # for only VO 
-            agentvel = [(agent.vel[0]+self.vel[0])*dv*0.5, (agent.vel[1]+self.vel[1])*dv*0.5] #### CHANGE HERE FROM ONLY USING  agent.vel below, seems better
-            # Now, with reciprocal features!
+            print("agentvel", agent.vel)
+            agentvel = [agent.vel[0]*dv, agent.vel[1]*dv] #### CHANGE HERE FROM ONLY USING  agent.vel below, seems better
             tp11 = np.add(tp1,agentvel)
             tp22 = np.add(tp2, agentvel)
             pos11 = np.add(self.pos, agentvel)
-            tp11, tp22 = self.extrapolate_cone(pos11, tp11, tp22, self.pos) # might actually work pretty well
+            #tp11, tp22 = self.extrapolate_cone(pos11, tp11, tp22, self.pos)
             velocity_object = Polygon([pos11, tp22, tp11])
             velocity_objects.append(velocity_object)
         self.velocity_objects = velocity_objects # Use this later
-        return velocity_objects, retreat
+        return velocity_objects
 
 
 
     def find_tangents(self, pos_i, pos_j, r):
         # finds tangents used to calculate collision cone, r= radius of agent j + r of agent i
         d = np.sqrt(np.sum(np.square(np.subtract(pos_i, pos_j))))
-        retreat = False
         if r > d: # To prevent imaginary values # WOuldn't want this to happen but I guess it's ok since r is extended
-            #print("\n how often",r) # This does not seem to work very well atm, In the paper they mention this special case
-            r = d*0.5   # Becomes NaN if we don't use this!
-            print("SHIT'S ABOUT TO BREAK DOWN")
-            #print("THIS IS INDEED WHAT CAUSES COLLISSIONS!!")
-            #print("\noch sen",r)
-            retreat = False # Funkar inget bra..
-
+            print("\n how often",r) # This does not seem to work very well atm, In the paper they mention this special case
+            r = d   # Becomes NaN if we don't use this!
+            print("\noch sen",r)
         alpha = np.arcsin(r/d)
-        #print("u", alpha)
+        print("u", alpha)
         gamma = 0.5*np.pi-alpha
         offseta = np.arctan2((pos_i[1]-pos_j[1]),(pos_i[0]-pos_j[0])) # arctan2 is a special version of arctan, takes (y, x) as input
         #print("alpha:", alpha, "gamma", gamma, "offseta", offseta)
@@ -90,7 +80,7 @@ class Agents:
         result_Y2 = pos_j[1] + r*np.sin(theta2)
         result_X2 = pos_j[0] + r*np.cos(theta2)
         tp2 = (result_X2, result_Y2)
-        return tp1, tp2, retreat
+        return tp1, tp2
 
     def extrapolate_cone(self, agent_pos, tp1, tp2, self_pos):
         # Do this in order to expand cone to cover entire map, probably unnecessary, 
@@ -130,8 +120,8 @@ class Agents:
         nd_vi = dv*dv_i/(max_acceleration*t) ######## WTTFFFFFFF # this can probably grow large
         #print("nd_vi", nd_vi)
         new_velocity = [0,0]
-        for degree in range(0,46):#181): INCREASED THIS TO Make the agents avoid each other more
-            theta = 4*degree * 0.0174533 # in radians
+        for degree in range(0,181): 
+            theta = degree * 0.0174533 # in radians
             c, s = np.cos(theta), np.sin(theta)
             rotMatrix = np.matrix([[c, -s], [s, c]])
             #rotMatrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta),  np.cos(theta)]])
@@ -189,31 +179,11 @@ class Agents:
         transl_to_origin = [velocity[0]-self.pos[0], velocity[1]-self.pos[1]] 
         rotMatrix = array([[cos(angle), -sin(angle)], [sin(angle),  cos(angle)]])
 
-def create_agents(n, radius, pos, goals):
-    agents = []
-    for i in range(n):
-        #theta = 2*math.pi*random.random()
-        #r = 10
-        #x = 10 + r * math.cos(theta) 
-        #y = 10 + r * math.sin(theta)
-        vx = np.random.uniform(low=-max_velocity, high=max_velocity)
-        vy = np.random.uniform(low=-max_velocity, high=max_velocity)
-        #theta = 2*math.pi*random.random()
-        #xgoal = 10 + r * math.cos(theta)
-        #ygoal = 10 + r * math.sin(theta)
-        posit = pos.pop()
-        goa = goals.pop()
-        agent = Agents([posit[0],posit[1]], [vx, vy], [goa[0],goa[1]], radius,'r')
-        agents.append(agent)
-    return agents
-
-def init_map():
-    pass
 
 def main():
-    n = 4 # Nr of agents
+    n = 2 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
-    size_field = 15
+    size_field = 10
     max_velocity = 2##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
     max_acceleration = 2##0.5
     dv = 0.1#0.1 # Step size when looking for new velocities
@@ -221,132 +191,92 @@ def main():
     simulation_time = 200
     radius = 1
 
-    pos = []
-    for t in range(n):
-        for i in range(n):
-            x = np.random.uniform(low=radius+1, high =10)
-            y = 3
-            pos.append((x,y))
-        for i in range(n):  
-            x = np.random.uniform(low=radius+1, high =10)
-            y = 10
-            pos.append((x,y))        
-        for i in range(n):  
-            x = radius+1
-            y = np.random.uniform(low=radius+1, high =10)
-            pos.append((x,y))
-        for i in range(n):  
-            x = 15
-            y = np.random.uniform(low=radius+1, high =10)
-            pos.append((x,y))
 
-    random.shuffle(pos)
-    goals = pos[::-1]
-    agents = create_agents(n, radius, pos, goals)
-    #agentA = Agents([1,1], [0.5, 0.5], [8,8], radius,'r') # position, velocity, goal, radius, color
-    #agentB = Agents([8,8], [1, -0.5], [1,1], radius, 'b')
-    #agentC = Agents([1,8], [1, 2], [8,1], radius, 'y')
-    #agentD = Agents([8,1], [-1, 2], [1,8], radius, 'g')
-    #agentF = Agents([1, 5], [1, 2], [8, 5], radius, 'b')
-    #agentG = Agents([8, 5], [-1, 2], [1, 5], radius, 'b')
-    #agents = [agentA, agentB]#, agentC, agentD, agentF, agentG]
+    agentA = Agents([1,1], [0.5, 0.5], [8,8], radius,'r') # position, velocity, goal, radius, color
+    agentB = Agents([8,8], [1, -0.5], [1,1], radius, 'b')
+    agentC = Agents([1,8], [1, 2], [8,1], radius, 'y')
+    agentD = Agents([8,1], [-1, 2], [1,8], radius, 'g')
+    agentF = Agents([1, 5], [1, 2], [8, 5], radius, 'b')
+    agentG = Agents([8, 5], [-1, 2], [1, 5], radius, 'b')
+    agents = [agentA, agentB, agentC, agentD, agentF, agentG]
 
-    go = init_map()
     fig, ax = plt.subplots() # Fig ska man aldrig bry sig om om man inte vill ändra själva plotrutan
     time = 0
     while time < simulation_time:
         for agent in agents:
-            VOs, retreat = agent.calculate_velocity_obstacles(agents)
-            if retreat:
-                print("Fly din dåre!")
-                print(agent.vel)
-                preffered_vel = [agent.vel[0]*(-1), agent.vel[1]*(-1)] # Helt om!
-                print(preffered_vel)
-            else:    
-                preffered_vel = agent.find_preffered_velocity()
+            VOs = agent.calculate_velocity_obstacles(agents)
+            preffered_vel = agent.find_preffered_velocity()
             #print("preffered velocity", preffered_vel)
             new_velocity = agent.avoidance_strategy(preffered_vel)
+            if agent == agentA:
+                diff_x = new_velocity[0]*t 
+                diff_y = new_velocity[1]*t
+                print(time)
+                #print("NEW X", diff_x)
+                #print("NEW Y", diff_y)
+                print("\n")
             agent.pos = [agent.pos[0]+new_velocity[0]*t, agent.pos[1]+new_velocity[1]*t]
             agent.vel = new_velocity
 
+            #velocity_ob = agentA.calculate_velocity_obstacles([agentB])
         if time==0:
-            anims = []
-            patches = []
-            fs = []
-            for agent in agents:
-                dd = ax.plot(agent.pos[0],agent.pos[1],'go')
-                anims.append(dd)
-                #ww = PolygonPatch(agent.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-                #patches.append(ww)              
-                oo = ax.add_artist(agent.shape)
-                fs.append(oo)
-            #for patch in patches:
-            #    ax.add_patch(patch)
-            
+            anim1, anim2, anim3, anim4, anim5, anim6 = ax.plot(agentA.pos[0],agentA.pos[1],'go',agentB.pos[0],agentB.pos[1],'bo', agentC.pos[0],agentC.pos[1],'ro', agentD.pos[0],agentD.pos[1],'yo', agentF.pos[0],agentF.pos[1],'yo', agentG.pos[0],agentG.pos[1],'yo')
+            patch = PolygonPatch(agentA.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch)
+            patch1a = PolygonPatch(agentA.velocity_objects[1], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch1a)
+            patch2 = PolygonPatch(agentA.velocity_objects[2], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch2)
+            patch3a = PolygonPatch(agentA.velocity_objects[3], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch3a)
+            patch4 = PolygonPatch(agentA.velocity_objects[4], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch4)
+            # patch2 = PolygonPatch(agentB.velocity_objects[0], facecolor='#FFFF00', edgecolor='#FFFF00', alpha=0.5, zorder=2)
+            # ax.add_patch(patch2)
+            # patch3 = PolygonPatch(agentC.velocity_objects[0], facecolor='#FFFF00', edgecolor='#FFFF00', alpha=0.5, zorder=2)
+            # ax.add_patch(patch3)
+            # patch4 = PolygonPatch(agentD.velocity_objects[0], facecolor='#FFFF00', edgecolor='#FFFF00', alpha=0.5, zorder=2)
+            # ax.add_patch(patch4)
 
-            #anim1, anim2, anim3, anim4, anim5, anim6 = ax.plot(agentA.pos[0],agentA.pos[1],'go',agentB.pos[0],agentB.pos[1],'bo', agentC.pos[0],agentC.pos[1],'ro', agentD.pos[0],agentD.pos[1],'yo', agentF.pos[0],agentF.pos[1],'yo', agentG.pos[0],agentG.pos[1],'yo')
-            #patch = PolygonPatch(agentA.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch)
-            #patch1a = PolygonPatch(agentA.velocity_objects[1], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch1a)
-            #patch2 = PolygonPatch(agentA.velocity_objects[2], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch2)
-            #patch3a = PolygonPatch(agentA.velocity_objects[3], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch3a)
-            #patch4 = PolygonPatch(agentA.velocity_objects[4], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch4)
-
-            
             ax.axis([-0, size_field, -0, size_field], 'equal')
-            #f = ax.add_artist(agentA.shape)
-            #f2 = ax.add_artist(agentB.shape)
-            #f3 = ax.add_artist(agentC.shape)
-            #f4 = ax.add_artist(agentD.shape)
-            #f5 = ax.add_artist(agentF.shape)
-            #f6 = ax.add_artist(agentG.shape)
-            #vel1 = ax.quiver(agentB.pos[0], agentB.pos[1], agentB.vel[0], agentB.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
-            #vel2 = ax.quiver(agentA.pos[0], agentA.pos[1], agentA.vel[0], agentA.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
-            #vel3 = ax.quiver(agentC.pos[0], agentC.pos[1], agentC.vel[0], agentC.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
-            #vel4 = ax.quiver(agentD.pos[0], agentD.pos[1], agentD.vel[0], agentD.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
+            f = ax.add_artist(agentA.shape)
+            f2 = ax.add_artist(agentB.shape)
+            f3 = ax.add_artist(agentC.shape)
+            f4 = ax.add_artist(agentD.shape)
+            f5 = ax.add_artist(agentF.shape)
+            f6 = ax.add_artist(agentG.shape)
+            vel1 = ax.quiver(agentB.pos[0], agentB.pos[1], agentB.vel[0], agentB.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
+            vel2 = ax.quiver(agentA.pos[0], agentA.pos[1], agentA.vel[0], agentA.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
+            vel3 = ax.quiver(agentC.pos[0], agentC.pos[1], agentC.vel[0], agentC.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
+            vel4 = ax.quiver(agentD.pos[0], agentD.pos[1], agentD.vel[0], agentD.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
         else:
-            for (agent,anim, f) in zip(agents,anims,fs):
-                #patch.remove()
-                #patch = PolygonPatch(agent.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-                #ax.add_patch(patch)             
-                anim[0].set_data(agent.pos[0],agent.pos[1])
-                f.center= agent.pos[0],agent.pos[1] 
-                ax.plot(agent.goal[0], agent.goal[1],'r*')
-
-            #anim2.set_data(agentB.pos[0], agentB.pos[1])
-            #anim3.set_data(agentC.pos[0], agentC.pos[1])
-            #anim4.set_data(agentD.pos[0], agentD.pos[1])
-            #anim5.set_data(agentF.pos[0], agentF.pos[1])
-            #anim6.set_data(agentG.pos[0], agentG.pos[1])
+            anim1.set_data(agentA.pos[0],agentA.pos[1])
+            anim2.set_data(agentB.pos[0], agentB.pos[1])
+            anim3.set_data(agentC.pos[0], agentC.pos[1])
+            anim4.set_data(agentD.pos[0], agentD.pos[1])
+            anim5.set_data(agentF.pos[0], agentF.pos[1])
+            anim6.set_data(agentG.pos[0], agentG.pos[1])
 
             #velocity_object = Polygon([pos11, tp22, tp11])
             #s11 = patch.get_path()
             #print(s11)
             #patch.bounds= (ps11, tp22, tp11)# = PolygonPatch(agentA.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
             #print(type(patch))
-
-
-            #patch.remove()
-            #patch = PolygonPatch(agentA.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch)
-            #patch1a.remove()
-            #patch1a = PolygonPatch(agentA.velocity_objects[1], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch1a)
-            #patch2.remove()
-            #patch2 = PolygonPatch(agentA.velocity_objects[2], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch2)
-            #patch3a.remove()
-            #patch3a = PolygonPatch(agentA.velocity_objects[3], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch3a)
-            #patch4.remove()
-            #patch4 = PolygonPatch(agentA.velocity_objects[4], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-            #ax.add_patch(patch4)
-            
-
+            patch.remove()
+            patch = PolygonPatch(agentA.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch)
+            patch1a.remove()
+            patch1a = PolygonPatch(agentA.velocity_objects[1], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch1a)
+            patch2.remove()
+            patch2 = PolygonPatch(agentA.velocity_objects[2], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch2)
+            patch3a.remove()
+            patch3a = PolygonPatch(agentA.velocity_objects[3], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch3a)
+            patch4.remove()
+            patch4 = PolygonPatch(agentA.velocity_objects[4], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch4)
             # patch2.remove()
             # patch2 = PolygonPatch(agentB.velocity_objects[0], facecolor='#FFFF00', edgecolor='#FFFF00', alpha=0.5, zorder=2)
             # ax.add_patch(patch2)
@@ -356,37 +286,34 @@ def main():
             # patch4.remove()
             # patch4 = PolygonPatch(agentD.velocity_objects[0], facecolor='#FFFF00', edgecolor='#FFFF00', alpha=0.5, zorder=2)
             # ax.add_patch(patch4)
-            
-            #f.center= agentA.pos[0],agentA.pos[1]
-            #f2.center = agentB.pos[0], agentB.pos[1]
-            #f3.center = agentC.pos[0], agentC.pos[1]
-            #f4.center = agentD.pos[0], agentD.pos[1]
-            #f5.center = agentF.pos[0], agentF.pos[1]
-            #f6.center = agentG.pos[0], agentG.pos[1]
-            #vel1.remove()
-            #vel2.remove()
-            #vel3.remove()
-            #vel4.remove()
-            #vel1 = ax.quiver(agentB.pos[0], agentB.pos[1], agentB.vel[0], agentB.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
-            #vel2 = ax.quiver(agentA.pos[0], agentA.pos[1], agentA.vel[0], agentA.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
-            #vel3 = ax.quiver(agentC.pos[0], agentC.pos[1], agentC.vel[0], agentC.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
-            #vel4 = ax.quiver(agentD.pos[0], agentD.pos[1], agentD.vel[0], agentD.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
+            f.center= agentA.pos[0],agentA.pos[1]
+            f2.center = agentB.pos[0], agentB.pos[1]
+            f3.center = agentC.pos[0], agentC.pos[1]
+            f4.center = agentD.pos[0], agentD.pos[1]
+            f5.center = agentF.pos[0], agentF.pos[1]
+            f6.center = agentG.pos[0], agentG.pos[1]
+            vel1.remove()
+            vel2.remove()
+            vel3.remove()
+            vel4.remove()
+            vel1 = ax.quiver(agentB.pos[0], agentB.pos[1], agentB.vel[0], agentB.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
+            vel2 = ax.quiver(agentA.pos[0], agentA.pos[1], agentA.vel[0], agentA.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
+            vel3 = ax.quiver(agentC.pos[0], agentC.pos[1], agentC.vel[0], agentC.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
+            vel4 = ax.quiver(agentD.pos[0], agentD.pos[1], agentD.vel[0], agentD.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
             #f = ax.add_artist(agentA.shape)
             #f2 = ax.add_artist(agentB.shape)
             #ax.quiver(agentB.pos[0], agentB.pos[1], agentB.vel[0], agentB.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
             #ax.quiver(agentA.pos[0], agentA.pos[1], agentA.vel[0], agentA.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
-            
-            #ax.plot(agentA.goal[0], agentA.goal[1],'r*')
-            #ax.plot(agentB.goal[0], agentB.goal[1],'g*')
-            #ax.plot(agentC.goal[0], agentC.goal[1],'b*')
-            #ax.plot(agentD.goal[0], agentD.goal[1],'y*')
-            #ax.plot(agentF.goal[0], agentF.goal[1],'b*')
-            #ax.plot(agentG.goal[0], agentG.goal[1],'b*')
+            ax.plot(agentA.goal[0], agentA.goal[1],'r*')
+            ax.plot(agentB.goal[0], agentB.goal[1],'g*')
+            ax.plot(agentC.goal[0], agentC.goal[1],'b*')
+            ax.plot(agentD.goal[0], agentD.goal[1],'y*')
+            ax.plot(agentF.goal[0], agentF.goal[1],'b*')
+            ax.plot(agentG.goal[0], agentG.goal[1],'b*')
 
 
         time += 1
-        print("time:",time)
-        plt.pause(0.1)
+        plt.pause(0.0000000000001)
    
 
 main()
