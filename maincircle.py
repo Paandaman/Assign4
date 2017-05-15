@@ -44,7 +44,7 @@ class Agents:
 
             # Check if within neighbourhood, seems to be working really well!
             distance = np.sqrt(np.sum(np.square(np.subtract(self.pos, agent.pos))))
-            neighbourhood_radius = self.size*3
+            neighbourhood_radius = self.size*15# funny one 15
             if distance > neighbourhood_radius: # Ignore this obstacle!
                 continue
 
@@ -295,18 +295,20 @@ def init_map(size_field, ax, radius):
     
     return polygons
 
-
+def rotate(l, n): 
+    # cyclic permutation of positions
+    return l[n:] + l[:n]
 
 def main():
-    n = 10 # Nr of agents
+    n = 12 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
     size_field = 40
     max_velocity = 2##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
     max_acceleration = 2##0.5
     dv = 0.1#0.1 # Step size when looking for new velocities
     t = 1 # timestep I guess
-    simulation_time = 400
-    radius = 1.5
+    simulation_time = 150
+    radius = 1
 
     pos = []
     goal = []
@@ -326,8 +328,8 @@ def main():
     #         pos.append((x-2.5,2))
     #         pos.append((2.5,x-2.5))
         
-    for degree in range(0,91,8):#181): INCREASED THIS TO Make the agents avoid each other more
-        theta = 4*degree * 0.0174533
+    for degree in range(0,360,30):#181): INCREASED THIS TO Make the agents avoid each other more
+        theta = degree * 0.0174533
         r = 15
         x = 16 + r * math.cos(theta) 
         y = 16 + r * math.sin(theta)
@@ -337,8 +339,10 @@ def main():
 
 
 
-    random.shuffle(pos)
-    goal = pos[::-1]
+    #random.shuffle(pos)
+    goal = rotate(pos, 6)
+    
+    #goal = pos[::-1]
     agents = create_agents(n, radius, pos, goal)
 
     fig, ax = plt.subplots() # Fig ska man aldrig bry sig om om man inte vill ändra själva plotrutan
@@ -386,12 +390,16 @@ def main():
    
     #print(save_trajectories[0])
     fig, ax = plt.subplots()
-    colors = ['r*','b*','g*','c*','m*','y*','k*','w*','b*','g*','r*','c*','m*','y*','k*','w*']
+    colors = ['r-','b-','g-','c-','m-','y-','k-','w*','b*','g*','r*','c*','m*','y*','k*','w*']
 
     for agent in save_trajectories:
         color = colors.pop()
+        x = []
+        y = []
         for spot in agent:
-            ax.plot(spot[0],spot[1],color)
+            x.append(spot[0])#ax.plot(spot[0],spot[1])#,color)
+            y.append(spot[1])
+        ax.plot(x,y)#,color)
     plt.show()
 
 main()
