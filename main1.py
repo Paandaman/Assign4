@@ -75,7 +75,7 @@ class Agents:
         retreat = False
         if r > d: # To prevent imaginary values # WOuldn't want this to happen but I guess it's ok since r is extended
             #print("\n how often",r) # This does not seem to work very well atm, In the paper they mention this special case
-            r = d*0.5   # Becomes NaN if we don't use this!
+            r = d-0.1   # Becomes NaN if we don't use this!
             print("SHIT'S ABOUT TO BREAK DOWN")
             #print("THIS IS INDEED WHAT CAUSES COLLISSIONS!!")
             #print("\noch sen",r)
@@ -221,7 +221,7 @@ def showedage(n1,n2,c):
 class Guid:
     def __init__(self,mapsize):
         self.size=mapsize
-        self.N=int(self.size**2/5)
+        self.N=int(self.size**2)
         self.points=[]
         self.nodes=[]
         for i in range(self.N):
@@ -246,6 +246,7 @@ class Guid:
     def update(self,agents,dis):
         aglist=[]
         for agent in agents:
+            #plt.plot(agent.pos[0],agent.pos[1],'bo')
             pos=agent.pos
             aglist.append(pos)
         treedata=np.asarray(aglist)
@@ -425,7 +426,7 @@ def main():
     max_acceleration = 2##0.5
     dv = 0.1#0.1 # Step size when looking for new velocities
     t = 1 # timestep I guess
-    simulation_time = 200
+    simulation_time = 400
     radius = 0.5
 
     #####for a cicular agents
@@ -433,6 +434,9 @@ def main():
     mid=size_field/2
     agrad=mid*0.8
     agents=[]
+    # agent=Agents([mid+5,mid+5],[2,2],[mid-5,mid-5],radius,'r')
+    # agents.append(agent)
+
     for num in range(0,n):
         angle=2*np.pi/n*num
         dx=agrad*cos(angle)
@@ -443,6 +447,7 @@ def main():
     guid=Guid(size_field)
     # guid.update(agents,1)
     # next=guid.astar(agents[0])
+    # plt.show()
 
     # pos = []
     # for t in range(n):
@@ -485,11 +490,11 @@ def main():
         guid.update(agents,radius*2)
         for agent in agents:
             
-            if (time>simulation_time/4*3):
-                agent.goal=agent.final
-            else:
-                next=guid.astar(agent)
-                agent.goal=next
+            # if (time>simulation_time/4*3):
+            #     agent.goal=agent.final
+            # else:
+            #     next=guid.astar(agent)
+            #     agent.goal=next
 
             VOs, retreat = agent.calculate_velocity_obstacles(agents)
             if retreat:
