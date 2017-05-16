@@ -10,6 +10,10 @@ import random
 from copy import deepcopy
 from scipy.spatial   import Delaunay,KDTree
 from scipy.spatial.distance import euclidean as distance
+
+
+from settings_base import*
+
 class Agents:
 
     def __init__(self,pos, vel, goal, size, colorr):
@@ -70,9 +74,9 @@ class Agents:
 
         self.velocity_objects = velocity_objects # Use this later
         # Add map obstacles    
-        #for polygon in boundary_polygons: # THis is unnecessary now, double check
+        for polygon in boundary_polygons: # THis is unnecessary now, double check
             # add padding to boundaries
-         #   self.velocity_objects.append(polygon)
+            self.velocity_objects.append(polygon)
         return velocity_objects
 
 
@@ -270,11 +274,11 @@ class Guid:
     def collision(self,p):
         conv_to_point = Point(p[0], p[1])
         collision_found = False
-        # for velocity_object in self.polys: 
-        #     if velocity_object.contains(conv_to_point):
-        #         collision_found = True
-        #         #print("COLLISION FOUND", conv_to_point) 
-        #         return collision_found
+        for velocity_object in self.polys: 
+            if velocity_object.contains(conv_to_point):
+                collision_found = True
+                #print("COLLISION FOUND", conv_to_point) 
+                return collision_found
 
         return collision_found
 
@@ -405,7 +409,7 @@ class Guid:
             ed=node_star[ed.father]
 
         ltc=len(tc)
-        if ltc==0:
+        if ltc<=4:
             target=ed
         else:
 
@@ -454,119 +458,29 @@ def create_fake_agents(n, radius, pos, goals):
         agents.append(agent)
     return agents
 
-def padd_walls(lower_wallp, left_wallp, right_wallp, radius):
-    # Adds a padding to the walls to make sure agents don't collide
-    lwb = lower_wallp.exterior.coords
-    lower_wall_padded = [(lwb[0][0],lwb[0][1]),(lwb[1][0],lwb[1][1]+radius), (lwb[2][0],lwb[2][1]+radius),(lwb[3][0],lwb[3][1])]  
-    lwbpol = Polygon(lower_wall_padded)
-
-    lewb = left_wallp.exterior.coords
-    left_wall_padded = [(lewb[0][0],lewb[0][1]-radius),(lewb[1][0],lewb[1][1]), (lewb[2][0]+radius,lewb[2][1]),(lewb[3][0]+radius,lewb[3][1]-radius)]
-    lwebpol = Polygon(left_wall_padded)
-
-    rwb = right_wallp.exterior.coords
-    right_wall_padded = [(rwb[0][0]-radius,rwb[0][1]-radius),(rwb[1][0]-radius,rwb[1][1]), (rwb[2][0],rwb[2][1]),(rwb[3][0],rwb[3][1]-radius)]
-    rwbpol = Polygon(right_wall_padded)
-
-    polygons = [lwbpol, lwebpol, rwbpol]
-    return polygons
 
 
-
-def init_map_old(size_field, ax, radius):
-
-    lower_wallp = Polygon([(0,0), (0,3),(size_field,3),(size_field,0)])
-    lower_wall = PolygonPatch(lower_wallp, facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-    ax.add_patch(lower_wall)
-
-    left_wallp = Polygon([(0,10), (0,size_field),(15,size_field), (15,10)])
-    left_wall = PolygonPatch(left_wallp, facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-    ax.add_patch(left_wall)
-
-    right_wallp = Polygon([(25,10), (25,size_field),(size_field,size_field), (size_field,10)])
-    right_wall = PolygonPatch(right_wallp, facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-    ax.add_patch(right_wall)
-
-    ax.axis([0, size_field, 0, size_field], 'equal')
-
-
-    polygons = padd_walls(lower_wallp, left_wallp, right_wallp, radius)
-    return polygons
-
-def init_map(size_field, ax, radius):
-
-    size_field = 40
-
-    pos = []
-    polygons = []
-    for x in range(5,40,5):
-        for y in range(5,40,5):
-            pos.append((x,y))
-
-    for coord in pos:
-            dd = Point(coord[0], coord[1]).buffer(1)
-            rrwe = PolygonPatch(dd, facecolor='#8A2BE2', edgecolor='#8A2BE2', alpha=0.9, zorder=2)
-            ax.add_patch(rrwe)
-            polygons.append(dd)
-    
-    ax.axis([0, size_field, 0, size_field], 'equal')   
-    
-    return polygons
-
-
-def rotate(l, n): 
-    # cyclic permutation of positions
-    return l[n:] + l[:n]
 
 
 
 def main():
-    n = 12 # Nr of agents
+    
     global dv, size_field, max_velocity, max_acceleration, t # change this later
-    size_field = 40
-    max_velocity = 10##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
-    max_acceleration = 2##0.5
-    dv = 0.1#0.1 # Step size when looking for new velocities
-    t = 1 # timestep I guess
-    simulation_time = 400
-    radius = 1
 
-    pos = []
-    goal = []
+    data=globalset()
 
-    # generate start and end positions
-    for t in range(n):
-        for i in range(n):
-            x = np.random.uniform(low=(10), high =(25))
-            y = size_field
-            goal.append((x,y))
-    #     for i in range(n):  
-    #         x = np.random.uniform(low=(size_field-25), high =(size_field))
-    #         y = 12
-    #         pos.append((x,y))        
-    #     for i in range(n):  
-    #         x = np.random.uniform(low=(0), high =(5))
-    #         y = 5
-    #         pos.append((x,y))
-
-    pos = []
-    for degree in range(0,360,30):#181): INCREASED THIS TO Make the agents avoid each other more
-        theta = degree * 0.0174533
-        r = 15
-        x = 16 + r * math.cos(theta) 
-        y = 16 + r * math.sin(theta)
-        #vx = np.random.uniform(low=-max_velocity, high=max_velocity)
-        #vy = np.random.uniform(low=-max_velocity, high=max_velocity)
-        pos.append((x,y))
+    n = data[0]
+    size_field = data[1]
+    max_velocity = data[2]##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
+    max_acceleration = data[3]##0.5
+    dv = data[4]#0.1 # Step size when looking for new velocities
+    t = data[5] # timestep I guess
+    simulation_time = data[6]
+    radius = data[7]
 
 
-
-    #random.shuffle(pos)
-    goal = rotate(pos, 6)
-
-        
-
-    #random.shuffle(pos)
+    pos,goal=init_pos_goal(n,size_field)
+    
     #goals = pos[::-1]
     agents = create_agents(n, radius, pos, goal)
     #agentA = Agents([1,1], [0.5, 0.5], [8,8], radius,'r') # position, velocity, goal, radius, color
@@ -579,9 +493,9 @@ def main():
     
 
     fig, ax = plt.subplots() # Fig ska man aldrig bry sig om om man inte vill ändra själva plotrutan
-    #boundary_polygons = init_map(size_field, ax, radius)
+    boundary_polygons = init_map_old(size_field, ax, radius)
 
-    guid=Guid(size_field,0)
+    guid=Guid(size_field,boundary_polygons)
 
 
     # guid.update(agents,radius*2)
@@ -589,9 +503,9 @@ def main():
     # plt.show()
 
     # Consider the obstacles as agents with zero velocity! Don't consider these when updating velocities etc
-    #obstacle_agents = create_fake_agents(len(boundary_polygons), radius, boundary_polygons, 1)
+    obstacle_agents = create_fake_agents(len(boundary_polygons), radius, boundary_polygons, 1)
     time = 0
-    #avoid = [agents+obstacle_agents] # want to send in both agents and obstacles when creating VOs
+    avoid = [agents+obstacle_agents] # want to send in both agents and obstacles when creating VOs
     while time < simulation_time:
         guid.update(agents,radius*2)
         for agent in agents:
@@ -601,7 +515,7 @@ def main():
             else:
                 next=guid.astar(agent)
                 agent.goal=next
-            VOs = agent.calculate_velocity_obstacles(agents,0)#, boundary_polygons)
+            VOs = agent.calculate_velocity_obstacles(avoid[0], boundary_polygons)
             #if retreat:
             #    print("Fly din dåre!")
             #    print(agent.vel)
@@ -616,14 +530,14 @@ def main():
 
         if time==0:
             anims = []
-            goals= []
+            #goals= []
             patches = []
             fs = []
             for agent in agents:
                 dd = ax.plot(agent.pos[0],agent.pos[1],'go')
                 anims.append(dd)
-                pp = ax.plot(agent.goal[0],agent.goal[1],'ro')
-                goals.append(pp)
+                #pp = ax.plot(agent.goal[0],agent.goal[1],'ro')
+                #goals.append(pp)
                 
                 #ww = PolygonPatch(agent.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
                 #patches.append(ww)              
@@ -658,16 +572,16 @@ def main():
             #vel3 = ax.quiver(agentC.pos[0], agentC.pos[1], agentC.vel[0], agentC.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
             #vel4 = ax.quiver(agentD.pos[0], agentD.pos[1], agentD.vel[0], agentD.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
         else:
-            for (agent,anim, f, goal) in zip(agents,anims,fs, goals):
+            for (agent,anim, f) in zip(agents,anims,fs):
                 #patch.remove()
                 #patch = PolygonPatch(agent.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
                 #ax.add_patch(patch)             
                 anim[0].set_data(agent.pos[0],agent.pos[1])
-                goal[0].set_data(agent.goal[0],agent.goal[1])
+                #goal[0].set_data(agent.goal[0],agent.goal[1])
                 f.center= agent.pos[0],agent.pos[1] 
 
 
-                #ax.plot(agent.goal[0], agent.goal[1],'r*')
+                ax.plot(agent.final[0], agent.final[1],'r*')
 
             #anim2.set_data(agentB.pos[0], agentB.pos[1])
             #anim3.set_data(agentC.pos[0], agentC.pos[1])
