@@ -26,12 +26,7 @@ class Agents:
         s = 0.5*max_acceleration*t*t
         d = np.sqrt(np.sum(np.square(np.subtract(self.goal, self.pos))))
         if d < s: # decrease velocity if we approach goal
-            #print("Does this ever Happen? ")
-            #print("\n d:", d)
-            #print("\n s:", s)
-            #print("\n ############################################################################N")
             v_i_star = v_i_star*(d/s)
-            #print("\n v-Istar:", v_i_star)
         return v_i_star
 
 
@@ -164,20 +159,19 @@ class Agents:
                 break
 
         if new_velocity == [0,0]:
-            print("sdsdsdsdsdsd")
+            print("Zero velocity chosen")
         test_change_vel = np.add(new_velocity,self.vel)#new_velocity#np.add(md_vi,self.vel)
         new_velocity_magn = np.sqrt(np.sum(np.square(test_change_vel)))
         if new_velocity_magn > max_velocity:
-            #print("HUUr", new_velocity, new_velocity_magn)
             v_temp = test_change_vel#new_velocity
-            #print("NEGER", v_temp, max_velocity, new_velocity_magn)
             v_temp = [v_temp[0]*(max_velocity/new_velocity_magn), v_temp[1]*(max_velocity/new_velocity_magn)]
-            #print("AAAAAAA", v_temp, self.vel)
             new_velocity = np.subtract(v_temp, self.vel)
             new_velocity = [new_velocity[0]*dv, new_velocity[1]*dv]
-        #print("FINAL NEW VELOCITY", new_velocity)
         return new_velocity
 
+
+    def time_to_collission(self):
+    	
 
     def collision_point(self,p):
         conv_to_point = Point(p[0], p[1])
@@ -231,7 +225,6 @@ def create_fake_agents(n, radius, pos, goals):
         
         posit = posi.centroid
 
-        print("KUKEN",posi.centroid.y)
         agent = Agents([posit.x, posit.y], [vx, vy], [posit.x, posit.y], radius,'r')
         agents.append(agent)
     return agents
@@ -298,14 +291,14 @@ def init_map(size_field, ax, radius):
 
 
 def main():
-    n = 5 # Nr of agents
+    n = 8 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
     size_field = 40
     max_velocity = 6##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
     max_acceleration = 2##0.5
     dv = 0.05#0.1 # Step size when looking for new velocities
     t = 1 # timestep I guess
-    simulation_time = 200
+    simulation_time = 400
     radius = 1
 
     pos = []

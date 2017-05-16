@@ -44,7 +44,7 @@ class Agents:
 
             # Check if within neighbourhood, seems to be working really well!
             distance = np.sqrt(np.sum(np.square(np.subtract(self.pos, agent.pos))))
-            neighbourhood_radius = self.size*15# funny one 15
+            neighbourhood_radius = self.size*8# funny one 15
             if distance > neighbourhood_radius: # Ignore this obstacle!
                 continue
 
@@ -303,11 +303,11 @@ def main():
     n = 12 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
     size_field = 40
-    max_velocity = 2##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
+    max_velocity = 6##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
     max_acceleration = 2##0.5
-    dv = 0.1#0.1 # Step size when looking for new velocities
+    dv = 0.05#0.1 # Step size when looking for new velocities
     t = 1 # timestep I guess
-    simulation_time = 150
+    simulation_time = 170
     radius = 1
 
     pos = []
@@ -387,6 +387,8 @@ def main():
         time += 1
         print("time:",time)
         plt.pause(0.1)
+        if time == 1:
+            ddd = input("Tryck")
    
     #print(save_trajectories[0])
     fig, ax = plt.subplots()

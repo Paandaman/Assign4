@@ -70,9 +70,9 @@ class Agents:
 
         self.velocity_objects = velocity_objects # Use this later
         # Add map obstacles    
-        for polygon in boundary_polygons: # THis is unnecessary now, double check
+        #for polygon in boundary_polygons: # THis is unnecessary now, double check
             # add padding to boundaries
-            self.velocity_objects.append(polygon)
+         #   self.velocity_objects.append(polygon)
         return velocity_objects
 
 
@@ -270,11 +270,11 @@ class Guid:
     def collision(self,p):
         conv_to_point = Point(p[0], p[1])
         collision_found = False
-        for velocity_object in self.polys: 
-            if velocity_object.contains(conv_to_point):
-                collision_found = True
-                #print("COLLISION FOUND", conv_to_point) 
-                return collision_found
+        # for velocity_object in self.polys: 
+        #     if velocity_object.contains(conv_to_point):
+        #         collision_found = True
+        #         #print("COLLISION FOUND", conv_to_point) 
+        #         return collision_found
 
         return collision_found
 
@@ -514,17 +514,22 @@ def init_map(size_field, ax, radius):
     return polygons
 
 
+def rotate(l, n): 
+    # cyclic permutation of positions
+    return l[n:] + l[:n]
+
+
 
 def main():
-    n = 5 # Nr of agents
+    n = 12 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
     size_field = 40
-    max_velocity = 6##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
+    max_velocity = 10##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
     max_acceleration = 2##0.5
-    dv = 0.05#0.1 # Step size when looking for new velocities
+    dv = 0.1#0.1 # Step size when looking for new velocities
     t = 1 # timestep I guess
     simulation_time = 400
-    radius = 0.3
+    radius = 1
 
     pos = []
     goal = []
@@ -545,12 +550,23 @@ def main():
     #         pos.append((x,y))
 
     pos = []
-    for x in range(5,35,3):
-        pos.append((x,7.5))
-        pos.append((x,5.5))
+    for degree in range(0,360,30):#181): INCREASED THIS TO Make the agents avoid each other more
+        theta = degree * 0.0174533
+        r = 15
+        x = 16 + r * math.cos(theta) 
+        y = 16 + r * math.sin(theta)
+        #vx = np.random.uniform(low=-max_velocity, high=max_velocity)
+        #vy = np.random.uniform(low=-max_velocity, high=max_velocity)
+        pos.append((x,y))
+
+
+
+    #random.shuffle(pos)
+    goal = rotate(pos, 6)
+
         
 
-    random.shuffle(pos)
+    #random.shuffle(pos)
     #goals = pos[::-1]
     agents = create_agents(n, radius, pos, goal)
     #agentA = Agents([1,1], [0.5, 0.5], [8,8], radius,'r') # position, velocity, goal, radius, color
@@ -563,9 +579,9 @@ def main():
     
 
     fig, ax = plt.subplots() # Fig ska man aldrig bry sig om om man inte vill ändra själva plotrutan
-    boundary_polygons = init_map_old(size_field, ax, radius)
+    #boundary_polygons = init_map(size_field, ax, radius)
 
-    guid=Guid(size_field,boundary_polygons)
+    guid=Guid(size_field,0)
 
 
     # guid.update(agents,radius*2)
@@ -573,9 +589,9 @@ def main():
     # plt.show()
 
     # Consider the obstacles as agents with zero velocity! Don't consider these when updating velocities etc
-    obstacle_agents = create_fake_agents(len(boundary_polygons), radius, boundary_polygons, 1)
+    #obstacle_agents = create_fake_agents(len(boundary_polygons), radius, boundary_polygons, 1)
     time = 0
-    avoid = [agents+obstacle_agents] # want to send in both agents and obstacles when creating VOs
+    #avoid = [agents+obstacle_agents] # want to send in both agents and obstacles when creating VOs
     while time < simulation_time:
         guid.update(agents,radius*2)
         for agent in agents:
@@ -585,7 +601,7 @@ def main():
             else:
                 next=guid.astar(agent)
                 agent.goal=next
-            VOs = agent.calculate_velocity_obstacles(avoid[0], boundary_polygons)
+            VOs = agent.calculate_velocity_obstacles(agents,0)#, boundary_polygons)
             #if retreat:
             #    print("Fly din dåre!")
             #    print(agent.vel)
