@@ -17,6 +17,7 @@ class Agents:
         self.size = size # radius of circle
         self.shape = plt.Circle((pos), radius=size, color=colorr) # CHANGED RAIDUS HERE FROM SIMPLY HAVING NUMERICAL STUFF
         self.velocity_objects = []
+        self.biased_avoid = False
 
     def find_preffered_velocity(self):
         v_i_direction = np.subtract(self.goal, self.pos)
@@ -81,6 +82,7 @@ class Agents:
             #print("\n how often",r) # This does not seem to work very well atm, In the paper they mention this special case
             r = d-0.1   # Becomes NaN if we don't use this!
             print("SHIT'S ABOUT TO BREAK DOWN")
+            self.biased_avoid = True
             #print("THIS IS INDEED WHAT CAUSES COLLISSIONS!!")
             #print("\noch sen",r)
 
@@ -137,31 +139,50 @@ class Agents:
         nd_vi = dv*dv_i/(max_acceleration*t) ######## WTTFFFFFFF # this can probably grow large
         #print("nd_vi", nd_vi)
         new_velocity = [0,0]
-        for degree in range(0,181,5):#181): INCREASED THIS TO Make the agents avoid each other more
-            theta = degree * 0.0174533 # in radians
-            c, s = np.cos(theta), np.sin(theta)
-            rotMatrix = np.matrix([[c, -s], [s, c]])
-            #rotMatrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta),  np.cos(theta)]])
-            #print("Innan rotation1", nd_vi)
-            md_vi = rotMatrix.dot(nd_vi).tolist()[0] # rotated by theta radians
-            #print("efter rotation1", md_vi) 
-            #change_vel = np.add(md_vi,self.vel) # Kanske inte ska vara här!! DETTA VAR FETT FEL!!!
-            ## Need to translate point to current position ## CHANGE HERE
-            change_vel = np.add(md_vi, self.pos)
-            if not self.collision_point(change_vel):
-                new_velocity = md_vi#change_vel
-                break
-            theta = -theta
-            c, s = np.cos(theta), np.sin(theta)
-            rotMatrix = np.matrix([[c, -s], [s, c]])
-            #print("Innan rotation1", md_vi)
-            md_vi = rotMatrix.dot(nd_vi).tolist()[0] # rotated by -theta radians
-            #print("efter rotation1", md_vi) 
-            #change_vel = np.add(md_vi,self.vel)
-            change_vel = np.add(md_vi, self.pos)
-            if not self.collision_point(change_vel):
-                new_velocity = md_vi#change_vel
-                break
+        # Prioritize going in the same opposite direction if we are too close!
+        if self.biased_avoid:
+            self.biased_avoid = False
+            for degree in range(0,361,5):#181): INCREASED THIS TO Make the agents avoid each other more
+                theta = degree * 0.0174533 # in radians
+                c, s = np.cos(theta), np.sin(theta)
+                rotMatrix = np.matrix([[c, -s], [s, c]])
+                #rotMatrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta),  np.cos(theta)]])
+                #print("Innan rotation1", nd_vi)
+                md_vi = rotMatrix.dot(nd_vi).tolist()[0] # rotated by theta radians
+                #print("efter rotation1", md_vi) 
+                #change_vel = np.add(md_vi,self.vel) # Kanske inte ska vara här!! DETTA VAR FETT FEL!!!
+                ## Need to translate point to current position ## CHANGE HERE
+                change_vel = np.add(md_vi, self.pos)
+                if not self.collision_point(change_vel):
+                    new_velocity = md_vi#change_vel
+                    break
+
+        else:
+            for degree in range(0,181,5):#181): INCREASED THIS TO Make the agents avoid each other more
+                theta = degree * 0.0174533 # in radians
+                c, s = np.cos(theta), np.sin(theta)
+                rotMatrix = np.matrix([[c, -s], [s, c]])
+                #rotMatrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta),  np.cos(theta)]])
+                #print("Innan rotation1", nd_vi)
+                md_vi = rotMatrix.dot(nd_vi).tolist()[0] # rotated by theta radians
+                #print("efter rotation1", md_vi) 
+                #change_vel = np.add(md_vi,self.vel) # Kanske inte ska vara här!! DETTA VAR FETT FEL!!!
+                ## Need to translate point to current position ## CHANGE HERE
+                change_vel = np.add(md_vi, self.pos)
+                if not self.collision_point(change_vel):
+                    new_velocity = md_vi#change_vel
+                    break
+                theta = -theta
+                c, s = np.cos(theta), np.sin(theta)
+                rotMatrix = np.matrix([[c, -s], [s, c]])
+                #print("Innan rotation1", md_vi)
+                md_vi = rotMatrix.dot(nd_vi).tolist()[0] # rotated by -theta radians
+                #print("efter rotation1", md_vi) 
+                #change_vel = np.add(md_vi,self.vel)
+                change_vel = np.add(md_vi, self.pos)
+                if not self.collision_point(change_vel):
+                    new_velocity = md_vi#change_vel
+                    break
 
         if new_velocity == [0,0]:
             print("sdsdsdsdsdsd")
@@ -301,14 +322,14 @@ def rotate(l, n):
     return l[n:] + l[:n]
 
 def main():
-    n = 10 # Nr of agents
+    n = 2 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
     size_field = 40
     max_velocity = 6##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
     max_acceleration = 2##0.5
     dv = 0.05#0.1 # Step size when looking for new velocities
     t = 1 # timestep I guess
-    simulation_time = 210
+    simulation_time = 250
     radius = 1
 
     pos = []
@@ -402,8 +423,8 @@ def main():
         time += 1
         print("time:",time)
         plt.pause(0.1)
-        #if time == 1:
-        #    ddd = input("Tryck")
+        if time == 1:
+            ddd = input("Tryck")
    
     #print(save_trajectories[0])
     fig, ax = plt.subplots()
