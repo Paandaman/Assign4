@@ -109,6 +109,6 @@ def globalset():
     max_acceleration = 2##0.5
     dv = 0.05#0.1 # Step size when looking for new velocities
     t = 1 # timestep I guess
-    simulation_time = 400
+    simulation_time = 250
     radius = 1
     return [n,size_field,max_velocity,max_acceleration,dv,t,simulation_time,radius]

@@ -17,6 +17,7 @@ class Agents:
         self.size = size # radius of circle
         self.shape = plt.Circle((pos), radius=size, color=colorr) # CHANGED RAIDUS HERE FROM SIMPLY HAVING NUMERICAL STUFF
         self.velocity_objects = []
+        self.obstacle_objects = []
 
     def find_preffered_velocity(self):
         v_i_direction = np.subtract(self.goal, self.pos)
@@ -32,6 +33,7 @@ class Agents:
 
     def calculate_velocity_obstacles(self, list_of_agents, boundary_polygons):
         velocity_objects = []
+        self.velocity_objects = []
         for agent in list_of_agents:
             if agent == self:
                 #print("Skip this")
@@ -61,10 +63,11 @@ class Agents:
             velocity_objects.append(velocity_object)
 
         self.velocity_objects = velocity_objects # Use this later
-        # Add map obstacles    
-        #for polygon in boundary_polygons: # THis is unnecessary now, double check
-            # add padding to boundaries
-        #    self.velocity_objects.append(polygon)
+        # Add map obstacles
+        if len(self.obstacle_objects) ==0:   
+            for polygon in boundary_polygons: # THis is unnecessary now, double check
+                # add padding to boundaries
+                self.obstacle_objects.append(polygon)
         return velocity_objects
 
 
@@ -132,8 +135,8 @@ class Agents:
         nd_vi = dv*dv_i/(max_acceleration*t) ######## WTTFFFFFFF # this can probably grow large
         #print("nd_vi", nd_vi)
         new_velocity = [0,0]
-        for degree in range(0,46):#181): INCREASED THIS TO Make the agents avoid each other more
-            theta = 4*degree * 0.0174533 # in radians
+        for degree in range(0,181,5):#181): INCREASED THIS TO Make the agents avoid each other more
+            theta = degree * 0.0174533 # in radians
             c, s = np.cos(theta), np.sin(theta)
             rotMatrix = np.matrix([[c, -s], [s, c]])
             #rotMatrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta),  np.cos(theta)]])
@@ -143,6 +146,10 @@ class Agents:
             #change_vel = np.add(md_vi,self.vel) # Kanske inte ska vara här!! DETTA VAR FETT FEL!!!
             ## Need to translate point to current position ## CHANGE HERE
             change_vel = np.add(md_vi, self.pos)
+            # change_vel*t but time is 1 so doesn't matter
+            if self.obstacle_collission(change_vel):
+                continue # opposite function here, if trye then we WANT to keep looking!
+
             if not self.collision_point(change_vel):
                 new_velocity = md_vi#change_vel
                 break
@@ -154,6 +161,8 @@ class Agents:
             #print("efter rotation1", md_vi) 
             #change_vel = np.add(md_vi,self.vel)
             change_vel = np.add(md_vi, self.pos)
+            if self.obstacle_collission(change_vel):
+                continue 
             if not self.collision_point(change_vel):
                 new_velocity = md_vi#change_vel
                 break
@@ -163,6 +172,7 @@ class Agents:
         test_change_vel = np.add(new_velocity,self.vel)#new_velocity#np.add(md_vi,self.vel)
         new_velocity_magn = np.sqrt(np.sum(np.square(test_change_vel)))
         if new_velocity_magn > max_velocity:
+            print("LARGE VELOCITY!")
             v_temp = test_change_vel#new_velocity
             v_temp = [v_temp[0]*(max_velocity/new_velocity_magn), v_temp[1]*(max_velocity/new_velocity_magn)]
             new_velocity = np.subtract(v_temp, self.vel)
@@ -172,6 +182,28 @@ class Agents:
 
     def time_to_collission(self):
     	pass
+
+    def obstacle_collission(self, new_pos):
+        # generates points on boundary of polygon
+        point_on_circle = []
+        for degree in range(0,360,1):#181): INCREASED THIS TO Make the agents avoid each other more
+            theta = degree * 0.0174533
+            r = self.size
+            x = new_pos[0] + r * math.cos(theta) 
+            y = new_pos[1] + r * math.sin(theta)
+            #vx = np.random.uniform(low=-max_velocity, high=max_velocity)
+            #vy = np.random.uniform(low=-max_velocity, high=max_velocity)
+            point_on_circle.append((x,y))
+        for p in point_on_circle:
+            conv_to_point = Point(p[0], p[1])
+            collision_found = False
+            for velocity_object in self.obstacle_objects: 
+                if velocity_object.contains(conv_to_point):
+                    collision_found = True
+                    print("DETECTED", conv_to_point) 
+                    return collision_found
+
+        return collision_found
 
     def collision_point(self,p):
         conv_to_point = Point(p[0], p[1])
@@ -265,7 +297,7 @@ def init_map_old(size_field, ax, radius):
     ax.axis([0, size_field, 0, size_field], 'equal')
 
 
-    polygons = padd_walls(lower_wallp, left_wallp, right_wallp, radius)
+    polygons = [lower_wallp, left_wallp, right_wallp]#padd_walls(lower_wallp, left_wallp, right_wallp, radius)
     return polygons
 
 def init_map(size_field, ax, radius):
@@ -291,7 +323,7 @@ def init_map(size_field, ax, radius):
 
 
 def main():
-    n = 8 # Nr of agents
+    n = 2 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
     size_field = 40
     max_velocity = 6##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
@@ -310,22 +342,22 @@ def main():
             x = np.random.uniform(low=(size_field/2-5), high =(size_field/2+5))
             y = size_field+10
             goal.append((x,y))
-    #     for i in range(n):  
-    #         x = np.random.uniform(low=(size_field-25), high =(size_field))
-    #         y = 12
-    #         pos.append((x,y))        
-    #     for i in range(n):  
-    #         x = np.random.uniform(low=(0), high =(5))
-    #         y = 5
-    #         pos.append((x,y))
+        for i in range(n):  
+            x = np.random.uniform(low=(size_field-25), high =(size_field))
+            y = 7
+            pos.append((x,y))        
+        for i in range(n):  
+            x = np.random.uniform(low=(0), high =(5))
+            y = 7
+            pos.append((x,y))
 
-    pos = []
-    for x in range(5,35,3):
-        if x ==5:
-            pos.append((x-2.5,2))
-        else:
-            pos.append((x-2.5,2))
-            pos.append((2.5,x-2.5))
+    # pos = []
+    # for x in range(5,35,3):
+    #     if x ==5:
+    #         pos.append((x-2.5,2))
+    #     else:
+    #         pos.append((x-2.5,2))
+    #         pos.append((2.5,x-2.5))
         
 
     random.shuffle(pos)
@@ -341,14 +373,14 @@ def main():
     
 
     fig, ax = plt.subplots() # Fig ska man aldrig bry sig om om man inte vill ändra själva plotrutan
-    boundary_polygons = init_map(size_field, ax, radius)
+    boundary_polygons = init_map_old(size_field, ax, radius)
     # Consider the obstacles as agents with zero velocity! Don't consider these when updating velocities etc
-    obstacle_agents = create_fake_agents(len(boundary_polygons), radius, boundary_polygons, 1)
+    #obstacle_agents = create_fake_agents(len(boundary_polygons), radius, boundary_polygons, 1)
     time = 0
-    avoid = [agents+obstacle_agents] # want to send in both agents and obstacles when creating VOs
+    #avoid = [agents+obstacle_agents] # want to send in both agents and obstacles when creating VOs
     while time < simulation_time:
         for agent in agents:
-            VOs = agent.calculate_velocity_obstacles(avoid[0], boundary_polygons)
+            VOs = agent.calculate_velocity_obstacles(agents, boundary_polygons)
             #if retreat:
             #    print("Fly din dåre!")
             #    print(agent.vel)
@@ -368,8 +400,9 @@ def main():
             for agent in agents:
                 dd = ax.plot(agent.pos[0],agent.pos[1],'go')
                 anims.append(dd)
-                #ww = PolygonPatch(agent.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-                #patches.append(ww)              
+                if len(agent.velocity_objects) != 0:
+                    ww = PolygonPatch(agent.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+                    patches.append(ww)              
                 oo = ax.add_artist(agent.shape)
                 fs.append(oo)
             #for patch in patches:
@@ -402,9 +435,11 @@ def main():
             #vel4 = ax.quiver(agentD.pos[0], agentD.pos[1], agentD.vel[0], agentD.vel[1], scale=6, scale_units ='width') ##in case we want velocity vector
         else:
             for (agent,anim, f) in zip(agents,anims,fs):
-                #patch.remove()
-                #patch = PolygonPatch(agent.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
-                #ax.add_patch(patch)             
+                if len(agent.velocity_objects) != 0:
+                    
+                    print("KDSDASd")
+                    patch = PolygonPatch(agent.velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+                    ax.add_patch(patch)            
                 anim[0].set_data(agent.pos[0],agent.pos[1])
                 f.center= agent.pos[0],agent.pos[1] 
                 ax.plot(agent.goal[0], agent.goal[1],'r*')

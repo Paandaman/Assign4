@@ -55,8 +55,8 @@ class Agents:
             #global tp11, tp22, pos11
             # translate CC by agents vel
             #print("agentvel", agent.vel)
-            #agentvel = [agent.vel[0]*dv, agent.vel[1]*dv] # for only VO 
-            agentvel = [(agent.vel[0]+self.vel[0])*dv*0.5, (agent.vel[1]+self.vel[1])*dv*0.5] #### CHANGE HERE FROM ONLY USING  agent.vel below, seems better
+            agentvel = [agent.vel[0]*dv, agent.vel[1]*dv] # for only VO 
+            #agentvel = [(agent.vel[0]+self.vel[0])*dv*0.5, (agent.vel[1]+self.vel[1])*dv*0.5] #### CHANGE HERE FROM ONLY USING  agent.vel below, seems better
             # Now, with reciprocal features!
             tp11 = np.add(tp1,agentvel)
             tp22 = np.add(tp2, agentvel)
@@ -106,22 +106,22 @@ class Agents:
         # interp can extrapolate as well. also keeps track of how to extrapolate
         eps = np.random.normal(0, 0.001, 1) # add small noise to avoid division by zero
         if self_pos[0] < tp1[0]:
-            x1 = tp1[0]+size_field
+            x1 = tp1[0]+size_field*1000
             f1 = interpolate.interp1d([agent_pos[0]+eps, tp1[0]], [agent_pos[1], tp1[1]],fill_value="extrapolate")
             y1 = f1(x1)#interp([x1], [agent_pos[0], tp1[0]], [agent_pos[1], tp1[1]])
             tp_extr1 = [x1, y1]
         else:
-            x1 = tp1[0]-size_field
+            x1 = tp1[0]-size_field*1000
             f1 = interpolate.interp1d([agent_pos[0]+eps, tp1[0]], [agent_pos[1], tp1[1]],fill_value="extrapolate")
             y1 = f1(x1)#interp([x1], [agent_pos[0], tp1[0]], [agent_pos[1], tp1[1]])
             tp_extr1 = [x1, y1]
         if self_pos[0] < tp2[0]:
-            x2 = tp2[0]+size_field
+            x2 = tp2[0]+size_field*1000
             f2 = interpolate.interp1d([agent_pos[0]+eps, tp2[0]], [agent_pos[1], tp2[1]],fill_value="extrapolate")
             y2 = f2(x2)#interp([x2], [agent_pos[0], tp2[0]], [agent_pos[1], tp2[1]])
             tp_extr2 = [x2, y2]
         else:
-            x2 = tp2[0]-size_field
+            x2 = tp2[0]-size_field*1000
             f2 = interpolate.interp1d([agent_pos[0]+eps, tp2[0]], [agent_pos[1], tp2[1]],fill_value="extrapolate")
             y2 = f2(x2)#interp([x2], [agent_pos[0], tp2[0]], [agent_pos[1], tp2[1]])
             tp_extr2 = [x2, y2]
@@ -137,8 +137,8 @@ class Agents:
         nd_vi = dv*dv_i/(max_acceleration*t) ######## WTTFFFFFFF # this can probably grow large
         #print("nd_vi", nd_vi)
         new_velocity = [0,0]
-        for degree in range(0,46):#181): INCREASED THIS TO Make the agents avoid each other more
-            theta = 4*degree * 0.0174533 # in radians
+        for degree in range(0,181,5):#181): INCREASED THIS TO Make the agents avoid each other more
+            theta = degree * 0.0174533 # in radians
             c, s = np.cos(theta), np.sin(theta)
             rotMatrix = np.matrix([[c, -s], [s, c]])
             #rotMatrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta),  np.cos(theta)]])
@@ -168,6 +168,7 @@ class Agents:
         test_change_vel = np.add(new_velocity,self.vel)#new_velocity#np.add(md_vi,self.vel)
         new_velocity_magn = np.sqrt(np.sum(np.square(test_change_vel)))
         if new_velocity_magn > max_velocity:
+            print("Hur ofta hander detta?")
             #print("HUUr", new_velocity, new_velocity_magn)
             v_temp = test_change_vel#new_velocity
             #print("NEGER", v_temp, max_velocity, new_velocity_magn)
@@ -190,7 +191,7 @@ class Agents:
 
         return collision_found
 
-
+    
     def rotate(self,velocity, angle):
         # translates velocity vector to origin, rotates it
         # then moves it back to it's previous position
@@ -300,14 +301,14 @@ def rotate(l, n):
     return l[n:] + l[:n]
 
 def main():
-    n = 12 # Nr of agents
+    n = 10 # Nr of agents
     global dv, size_field, max_velocity, max_acceleration, t # change this later
     size_field = 40
     max_velocity = 6##0.5 these works for smaller radiuses, also produces the dancing thingy mentioned in the paper
     max_acceleration = 2##0.5
     dv = 0.05#0.1 # Step size when looking for new velocities
     t = 1 # timestep I guess
-    simulation_time = 170
+    simulation_time = 210
     radius = 1
 
     pos = []
@@ -377,25 +378,39 @@ def main():
                 fs.append(oo)
             
             ax.axis([-0, size_field, -0, size_field], 'equal')
+            
+
+            patcha = PolygonPatch(agents[0].velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patcha)
+
+            patch1 = PolygonPatch(agents[1].velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch1)
+
         else:
             for (agent,anim, f) in zip(agents,anims,fs):
                 anim[0].set_data(agent.pos[0],agent.pos[1])
                 f.center= agent.pos[0],agent.pos[1] 
                 ax.plot(agent.goal[0], agent.goal[1],'r*')
-
+            
+            patcha.remove()
+            patcha = PolygonPatch(agents[0].velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patcha)
+            patch1.remove()
+            patch1 = PolygonPatch(agents[1].velocity_objects[0], facecolor='#ff3333', edgecolor='#6699cc', alpha=0.5, zorder=2)
+            ax.add_patch(patch1)
 
         time += 1
         print("time:",time)
         plt.pause(0.1)
-        if time == 1:
-            ddd = input("Tryck")
+        #if time == 1:
+        #    ddd = input("Tryck")
    
     #print(save_trajectories[0])
     fig, ax = plt.subplots()
     colors = ['r-','b-','g-','c-','m-','y-','k-','w*','b*','g*','r*','c*','m*','y*','k*','w*']
 
     for agent in save_trajectories:
-        color = colors.pop()
+        #color = colors.pop()
         x = []
         y = []
         for spot in agent:
